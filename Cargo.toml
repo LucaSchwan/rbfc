@@ -10,3 +10,4 @@ name = "rbfc"
 path = "src/lib/mod.rs"
 
 [dependencies]
+thiserror = "1.0.56"
