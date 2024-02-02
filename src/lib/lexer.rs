@@ -100,3 +100,57 @@ impl Lexer {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_next_token() {
+        let mut lexer = Lexer::new(String::from("+++"));
+        assert_eq!(
+            lexer.next_token(),
+            Token {
+                token_type: TokenType::Plus,
+                size: Some(3)
+            }
+        );
+
+        let mut lexer = Lexer::new(String::from("++>"));
+        assert_eq!(
+            lexer.next_token(),
+            Token {
+                token_type: TokenType::Plus,
+                size: Some(2)
+            }
+        );
+        assert_eq!(
+            lexer.next_token(),
+            Token {
+                token_type: TokenType::ShiftRight,
+                size: Some(1)
+            }
+        );
+    }
+
+    #[test]
+    fn test_brackets() {
+        let mut lexer = Lexer::new(String::from("["));
+        assert_eq!(
+            lexer.next_token(),
+            Token {
+                token_type: TokenType::OpenBracket,
+                size: None
+            }
+        );
+
+        let mut lexer = Lexer::new(String::from("]"));
+        assert_eq!(
+            lexer.next_token(),
+            Token {
+                token_type: TokenType::CloseBracket,
+                size: None
+            }
+        );
+    }
+}
