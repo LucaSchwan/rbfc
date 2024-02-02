@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# The commit message should be structured as follows:
+# <type>(<scope>): <subject>
+#
+# The type and subject fields are mandatory, the scope field is optional.
+#
+#   https://www.conventionalcommits.org/en/v1.0.0/
+
+echo "Checking commit message for conventional commits format"
+
+commit_message=$(cat "$1")
+
+regex='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9-]+\))?!?: .{1,50}'
+
+if ! [[ $commit_message =~ $regex ]]; then
+	echo "Invalid commit message format. Please use the following format:"
+	echo "type(scope)!: subject"
+	echo "type: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test"
+	echo "scope: optional, can be anything specifying the scope of the commit"
+	echo "subject: short description of the change"
+	echo "Example: feat: add new feature"
+	exit 1
+fi
+
+echo "Commit message is valid"
