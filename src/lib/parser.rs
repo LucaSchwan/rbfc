@@ -10,18 +10,64 @@ pub enum ParserError {
     UnexpectedEof(usize, usize),
 }
 
+/// The Parser struct is responsible for parsing a sequence of tokens
+/// into a sequence of operations.
+///
+/// # Example
+/// ```
+/// use rbfc::parser::Parser;
+///
+/// let input = String::from("+++[->+<]...,,,");
+/// let mut parser = Parser::new(input);
+/// let mut ops = parser.parse().unwrap();
+/// ```
 #[derive(Debug)]
 pub struct Parser {
     lexer: lexer::Lexer,
 }
 
 impl Parser {
+    /// Create a new parser from a string
+    ///
+    /// # Arguments
+    /// * `input` - A string to be parsed
+    ///
+    /// # Example
+    /// ```
+    /// use rbfc::parser::Parser;
+    ///
+    /// let input = String::from("+++[->+<]...,,,");
+    /// let mut parser = Parser::new(input);
+    /// ```
     pub fn new(input: String) -> Parser {
         Parser {
             lexer: lexer::Lexer::new(input),
         }
     }
 
+    /// Parse the input string into a sequence of operations
+    ///
+    /// # Example
+    /// ```
+    /// use rbfc::parser::Parser;
+    ///
+    /// let input = String::from("+++[->+<]...,,,");
+    /// let mut parser = Parser::new(input);
+    /// let mut ops = parser.parse().unwrap();
+    /// ```
+    ///
+    /// # Errors
+    /// Returns an error if the input string contains unmatched brackets
+    /// or if the input string ends unexpectedly
+    /// ```
+    /// use rbfc::parser::Parser;
+    /// use rbfc::parser::ParserError;
+    ///
+    /// let input = String::from("+++[->+<");
+    /// let mut parser = Parser::new(input);
+    /// let result = parser.parse();
+    /// assert_eq!(result, Err(ParserError::UnexpectedEof(6, 1)));
+    /// ```
     pub fn parse(&mut self) -> Result<Vec<lexer::Token>, ParserError> {
         let mut jump_stack = Vec::new();
         let mut ops = Vec::new();
@@ -73,31 +119,38 @@ mod test {
             vec![
                 lexer::Token {
                     token_type: lexer::TokenType::Plus,
-                    size: Some(2)
+                    size: Some(2),
+                    loc: 0
                 },
                 lexer::Token {
                     token_type: lexer::TokenType::OpenBracket,
-                    size: Some(7)
+                    size: Some(7),
+                    loc: 2
                 },
                 lexer::Token {
                     token_type: lexer::TokenType::Minus,
-                    size: Some(1)
+                    size: Some(1),
+                    loc: 3
                 },
                 lexer::Token {
                     token_type: lexer::TokenType::ShiftRight,
-                    size: Some(1)
+                    size: Some(1),
+                    loc: 4
                 },
                 lexer::Token {
                     token_type: lexer::TokenType::Plus,
-                    size: Some(1)
+                    size: Some(1),
+                    loc: 5
                 },
                 lexer::Token {
                     token_type: lexer::TokenType::ShiftLeft,
-                    size: Some(1)
+                    size: Some(1),
+                    loc: 6
                 },
                 lexer::Token {
                     token_type: lexer::TokenType::CloseBracket,
-                    size: Some(1)
+                    size: Some(1),
+                    loc: 7
                 },
             ]
         );

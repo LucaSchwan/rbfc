@@ -7,7 +7,11 @@
 /// let input = String::from("+++[->+<]...,,,");
 /// let mut lexer = Lexer::new(input);
 /// let token = lexer.next_token();
-/// assert_eq!(token, Token { token_type: TokenType::Plus, size: Some(3) });
+/// assert_eq!(token, Token {
+///     token_type: TokenType::Plus,
+///     size: Some(3),
+///     loc: 0
+/// });
 /// ```
 
 /// The TokenType enum represents the different types of tokens
@@ -43,6 +47,8 @@ pub struct Token {
     pub token_type: TokenType,
     /// The size of the token
     pub size: Option<usize>,
+    /// The location of the token in the input string
+    pub loc: usize,
 }
 
 impl Token {
@@ -103,11 +109,13 @@ impl Lexer {
     ///    lexer.next_token(),
     ///    Token {
     ///    token_type: TokenType::Plus,
-    ///    size: Some(3)
+    ///    size: Some(3),
+    ///    loc: 0
     /// });
     /// ```
     pub fn next_token(&mut self) -> Token {
         let mut c = char::default();
+        let loc = self.position;
 
         while Token::is_token(&c).is_none() {
             c = match self.next_char() {
@@ -116,6 +124,7 @@ impl Lexer {
                     return Token {
                         token_type: TokenType::Eof,
                         size: None,
+                        loc,
                     }
                 }
             };
@@ -147,11 +156,13 @@ impl Lexer {
                 Token {
                     token_type,
                     size: Some(size),
+                    loc,
                 }
             }
             _ => Token {
                 token_type,
                 size: None,
+                loc,
             },
         }
     }
@@ -168,7 +179,8 @@ mod test {
             lexer.next_token(),
             Token {
                 token_type: TokenType::Plus,
-                size: Some(3)
+                size: Some(3),
+                loc: 0
             }
         );
 
@@ -177,14 +189,16 @@ mod test {
             lexer.next_token(),
             Token {
                 token_type: TokenType::Plus,
-                size: Some(2)
+                size: Some(2),
+                loc: 0
             }
         );
         assert_eq!(
             lexer.next_token(),
             Token {
                 token_type: TokenType::ShiftRight,
-                size: Some(1)
+                size: Some(1),
+                loc: 2
             }
         );
     }
@@ -196,7 +210,8 @@ mod test {
             lexer.next_token(),
             Token {
                 token_type: TokenType::OpenBracket,
-                size: None
+                size: None,
+                loc: 0
             }
         );
 
@@ -205,7 +220,8 @@ mod test {
             lexer.next_token(),
             Token {
                 token_type: TokenType::CloseBracket,
-                size: None
+                size: None,
+                loc: 0
             }
         );
     }
