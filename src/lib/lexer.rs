@@ -1,3 +1,24 @@
+/// The lexer module is responsible for tokenizing the input string
+/// into a sequence of tokens.
+///
+/// # Example
+/// ```
+/// use rbfc::lexer::{Lexer, Token, TokenType};
+/// let input = String::from("+++[->+<]...,,,");
+/// let mut lexer = Lexer::new(input);
+/// let token = lexer.next_token();
+/// assert_eq!(token, Token { token_type: TokenType::Plus, size: Some(3) });
+/// ```
+
+/// The TokenType enum represents the different types of tokens
+/// that the lexer can produce.
+///
+/// # Example
+/// ```
+/// use rbfc::lexer::TokenType;
+/// assert_eq!(TokenType::Eof, TokenType::Eof);
+/// ```
+///
 #[derive(Debug, PartialEq)]
 pub enum TokenType {
     Eof,
@@ -11,9 +32,16 @@ pub enum TokenType {
     CloseBracket,
 }
 
-#[derive(Debug)]
+/// The Token struct represents a single token produced by the lexer.
+/// It contains the token type and the size of the token if applicable.
+/// The size is the number of consecutive tokens of the same type.
+/// For example, the token "+++" would have a size of 3.
+/// The size is None for tokens that are not repeated.
+#[derive(Debug, PartialEq)]
 pub struct Token {
+    /// The type of the token
     pub token_type: TokenType,
+    /// The size of the token
     pub size: Option<usize>,
 }
 
@@ -33,6 +61,8 @@ impl Token {
     }
 }
 
+/// The Lexer struct is responsible for tokenizing the input string
+/// into a sequence of tokens.
 #[derive(Debug)]
 pub struct Lexer {
     input: String,
@@ -40,6 +70,18 @@ pub struct Lexer {
 }
 
 impl Lexer {
+    /// Create a new lexer from a string
+    ///
+    /// # Arguments
+    /// * `input` - A string to be tokenized
+    ///
+    /// # Example
+    /// ```
+    /// use rbfc::lexer::Lexer;
+    ///
+    /// let input = String::from("+++[->+<]...,,,");
+    /// let mut lexer = Lexer::new(input);
+    /// ```
     pub fn new(input: String) -> Lexer {
         Lexer { input, position: 0 }
     }
@@ -50,6 +92,20 @@ impl Lexer {
         c
     }
 
+    /// Get the next token from the input
+    ///
+    /// # Example
+    /// ```
+    /// use rbfc::lexer::{Lexer, Token, TokenType};
+    ///
+    /// let mut lexer = Lexer::new(String::from("+++"));
+    /// assert_eq!(
+    ///    lexer.next_token(),
+    ///    Token {
+    ///    token_type: TokenType::Plus,
+    ///    size: Some(3)
+    /// });
+    /// ```
     pub fn next_token(&mut self) -> Token {
         let mut c = char::default();
 
