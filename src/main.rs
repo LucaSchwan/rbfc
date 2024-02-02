@@ -5,8 +5,8 @@ use rbfc::parser;
 fn main() {
     let input = String::from("+++[->+<]...,,,");
     let mut parser = parser::Parser::new(input);
-    let ops = parser.parse();
-    for op in ops {
+    let mut ops = parser.parse().unwrap();
+    while let Some(op) = ops.pop() {
         println!("{:?}", op);
     }
 }
