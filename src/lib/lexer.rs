@@ -51,17 +51,18 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Token {
-        if self.position >= self.input.len() {
-            return Token {
-                token_type: TokenType::Eof,
-                size: None,
-            };
-        }
-
-        let mut c = self.next_char().unwrap();
+        let mut c = char::default();
 
         while Token::is_token(&c).is_none() {
-            c = self.next_char().unwrap();
+            c = match self.next_char() {
+                Some(c) => c,
+                None => {
+                    return Token {
+                        token_type: TokenType::Eof,
+                        size: None,
+                    }
+                }
+            };
         }
 
         let token_type = Token::is_token(&c).expect("Should be some token_type");
