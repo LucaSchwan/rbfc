@@ -1,5 +1,4 @@
-//! This module is the root of the crate and contains the main entry point for the library.
-//! It also re-exports the lexer and parser modules.
+//! This module is the main module of the project. It contains the interpreter, lexer and parser modules.
 //!
 //! # Parser example
 //! ```
