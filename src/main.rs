@@ -1,12 +1,10 @@
 extern crate rbfc;
 
-use rbfc::parser;
+use rbfc::interpreter::{Interpreter, InterpreterError};
 
-fn main() {
-    let input = String::from("+++[->+<]...,,,");
-    let mut parser = parser::Parser::new(input);
-    let mut ops = parser.parse().unwrap();
-    while let Some(op) = ops.pop() {
-        println!("{:?}", op);
-    }
+fn main() -> Result<(), InterpreterError> {
+    let input = String::from("+++.>+++.>,.>,.");
+    let mut interpreter = Interpreter::new(input, vec![3, 3])?;
+    interpreter.interpret().unwrap();
+    Ok(())
 }
