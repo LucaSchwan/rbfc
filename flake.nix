@@ -38,7 +38,7 @@
         devShells.default = pkgs.mkShell {
           buildInputs = [
             (rustVersion.override {
-              extensions = [ "rust-src" "rust-analyzer" ];
+              extensions = [ "rust-src" "rust-analyzer" "rustfmt" ];
             })
           ];
         };
