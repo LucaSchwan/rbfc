@@ -1,5 +1,5 @@
-use crate::lexer::{Token, TokenType};
-use crate::parser::{Parser, ParserError};
+use super::lexer::{Token, TokenType};
+use super::parser::{Parser, ParserError};
 use std::collections::VecDeque;
 use thiserror::Error;
 

@@ -1,6 +1,5 @@
-use thiserror::Error;
-
 use super::lexer;
+use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
 pub enum ParserError {

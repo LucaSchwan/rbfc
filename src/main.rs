@@ -1,6 +1,6 @@
-extern crate rbfc;
-
 use rbfc::interpreter::{Interpreter, InterpreterError};
+
+mod rbfc;
 
 fn main() -> Result<(), InterpreterError> {
     let input = String::from("+++.>+++.>,.>,.");
