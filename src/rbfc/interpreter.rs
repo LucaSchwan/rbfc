@@ -21,6 +21,23 @@ pub enum InterpreterError {
     ParserError(ParserError),
 }
 
+/// The settings for the interpreter
+///
+/// This struct is used to represent the settings for the interpreter. It contains the ascii flag
+/// which is used to determine if the output should be printed as ascii characters or as decimal
+/// numbers
+///
+/// # Fields
+/// * `ascii` - A boolean that represents if the output should be printed as ascii characters
+///           or as decimal numbers
+///
+/// # Example
+/// ```
+/// use rbfc::interpreter::{InterpreterSettings};
+/// let settings = InterpreterSettings {
+///    ascii: true
+///    };
+/// ```
 pub struct InterpreterSettings {
     pub ascii: bool
 }
@@ -36,11 +53,16 @@ impl Default for InterpreterSettings {
 /// The interpreter struct
 ///
 /// This struct is used to represent the interpreter. It contains the tape, the input, the operations
-/// to be executed, the program counter, the data pointer and the stack
-/// The tape is an array of 30000 u8, the input is a VecDeque of u8, the operations are a Vec of Token,
-/// the program counter is an usize, the data pointer is an usize.
-/// The interpreter has a new method to create a new instance of the interpreter and an interpret
-/// method to execute the operations
+/// and the program counter. It also contains the data pointer and the settings for the interpreter
+/// such as the ascii flag
+///
+/// # Fields
+/// * `tape` - The tape for the program
+/// * `input` - The input for the program
+/// * `ops` - The operations for the program
+/// * `pc` - The program counter
+/// * `dp` - The data pointer
+/// * `settings` - The settings for the interpreter
 ///
 /// # Example
 /// ```
@@ -204,7 +226,8 @@ mod test {
     #[test]
     fn test_interpreter() {
         let input = String::from("++[->+<]");
-        let mut interpreter = Interpreter::new(input, vec![]).unwrap();
+        let settings: InterpreterSettings = Default::default();
+        let mut interpreter = Interpreter::new(input, vec![], settings).unwrap();
         interpreter.interpret().unwrap();
     }
 }

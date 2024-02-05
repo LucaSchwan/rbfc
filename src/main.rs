@@ -5,17 +5,23 @@ use thiserror::Error;
 
 mod rbfc;
 
+/// The arguments for the program
 #[derive(Parser, Debug)]
 struct Args {
+    /// The file to interpret
     file: PathBuf,
+    /// Input as a list of bytes separated by commas
     #[arg(short, long)]
     bytes: Option<String>,
     #[arg(short, long)]
+    /// Input as a list of decimal numbers separated by commas
     dec: Option<String>,
+    /// Output the tape as ascii characters
     #[arg(short, long)]
     ascii: bool,
 }
 
+/// The error type for the program
 #[derive(Error, Debug)]
 enum RBFCError {
     #[error("Error reading file: {0}")]
