@@ -21,6 +21,18 @@ pub enum InterpreterError {
     ParserError(ParserError),
 }
 
+pub struct InterpreterSettings {
+    pub ascii: bool
+}
+
+impl Default for InterpreterSettings {
+    fn default() -> Self {
+        InterpreterSettings {
+            ascii: false
+        }
+    }
+}
+
 /// The interpreter struct
 ///
 /// This struct is used to represent the interpreter. It contains the tape, the input, the operations
@@ -48,6 +60,7 @@ pub struct Interpreter {
     pc: usize,
     dp: usize,
     stack: Vec<usize>,
+    settings: InterpreterSettings
 }
 
 impl Interpreter {
@@ -65,6 +78,7 @@ impl Interpreter {
     /// let mut interpreter = Interpreter::new(input, vec![3, 3]).unwrap();
     /// ```
     pub fn new(code: String, input: Vec<u8>) -> Result<Interpreter, InterpreterError> {
+    pub fn new(code: String, input: Vec<u8>, settings: InterpreterSettings) -> Result<Interpreter, InterpreterError> {
         let mut parser = Parser::new(code);
         let ops = match parser.parse() {
             Ok(ops) => ops,
@@ -77,6 +91,7 @@ impl Interpreter {
             pc: 0,
             dp: 0,
             stack: Vec::new(),
+            settings
         })
     }
 
