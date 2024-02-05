@@ -38,7 +38,7 @@ impl Default for InterpreterSettings {
 /// This struct is used to represent the interpreter. It contains the tape, the input, the operations
 /// to be executed, the program counter, the data pointer and the stack
 /// The tape is an array of 30000 u8, the input is a VecDeque of u8, the operations are a Vec of Token,
-/// the program counter is an usize, the data pointer is an usize and the stack is a Vec of usize
+/// the program counter is an usize, the data pointer is an usize.
 /// The interpreter has a new method to create a new instance of the interpreter and an interpret
 /// method to execute the operations
 ///
@@ -59,7 +59,6 @@ pub struct Interpreter {
     ops: Vec<Token>,
     pc: usize,
     dp: usize,
-    stack: Vec<usize>,
     settings: InterpreterSettings
 }
 
@@ -77,7 +76,6 @@ impl Interpreter {
     /// let input = String::from("+++.>+++.>,.>,.");
     /// let mut interpreter = Interpreter::new(input, vec![3, 3]).unwrap();
     /// ```
-    pub fn new(code: String, input: Vec<u8>) -> Result<Interpreter, InterpreterError> {
     pub fn new(code: String, input: Vec<u8>, settings: InterpreterSettings) -> Result<Interpreter, InterpreterError> {
         let mut parser = Parser::new(code);
         let ops = match parser.parse() {
@@ -90,7 +88,6 @@ impl Interpreter {
             ops,
             pc: 0,
             dp: 0,
-            stack: Vec::new(),
             settings
         })
     }
@@ -172,8 +169,11 @@ impl Interpreter {
                 }
                 TokenType::CloseBracket => {
                     if self.tape[self.dp] != 0 {
-                        if let Some(jump) = self.stack.pop() {
-                            self.pc = jump;
+                        if let Some(size) = op.size {
+                            self.pc = size;
+                        } else {
+                            let op = &self.ops[self.pc];
+                            return Err(InterpreterError::UnexpectedNoneSize(op.loc));
                         }
                     }
                 }
