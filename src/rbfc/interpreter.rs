@@ -147,7 +147,19 @@ impl Interpreter {
                     }
                 }
                 TokenType::Dot => {
-                    print!("{}", self.tape[self.dp]);
+                    let op = &self.ops[self.pc];
+                    match op.size {
+                        Some(size) => {
+                            for _ in 0..size {
+                                if self.settings.ascii {
+                                    print!("{}", self.tape[self.dp] as char);
+                                } else {
+                                    print!("{}", self.tape[self.dp]);
+                                }
+                            }
+                        }
+                        None => return Err(InterpreterError::UnexpectedNoneSize(op.loc)),
+                    }
                 }
                 TokenType::Comma => {
                     let input_byte = self.input.pop_front();
