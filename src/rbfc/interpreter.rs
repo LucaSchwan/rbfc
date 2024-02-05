@@ -159,10 +159,10 @@ impl Interpreter {
                 }
                 TokenType::OpenBracket => {
                     if self.tape[self.dp] == 0 {
-                        let op = &self.ops[self.pc];
                         if let Some(size) = op.size {
                             self.pc = size;
                         } else {
+                            let op = &self.ops[self.pc];
                             return Err(InterpreterError::UnexpectedNoneSize(op.loc));
                         }
                     }
