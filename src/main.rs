@@ -14,14 +14,6 @@ struct Args {
     /// The file to interpret
     file_path: PathBuf,
 
-    /// Input as a list of bytes separated by commas
-    #[arg(short, long)]
-    bytes: Option<String>,
-
-    /// Input as a list of decimal numbers separated by commas
-    #[arg(short, long)]
-    dec: Option<String>,
-
     /// The output folder
     #[arg(short, long)]
     output: Option<String>,
@@ -36,8 +28,6 @@ struct Args {
 enum RBFCError {
     #[error("Error reading file: {0}")]
     ReadingFile(String),
-    #[error("Error parsing input")]
-    ParsingInput,
     #[error("Error while interpreting: {0}")]
     Interpreter(InterpreterError),
     #[error("Error while compiling: {0}")]
@@ -61,22 +51,8 @@ fn main() -> Result<(), RBFCError> {
     let code = std::fs::read_to_string(args.file_path)
         .or(Err(RBFCError::ReadingFile(file_name.clone())))?;
 
-    let input: Vec<u8> = match args.bytes {
-        Some(bytes) => bytes
-            .split(',')
-            .map(|x| u8::from_str_radix(x, 16).or(Err(RBFCError::ParsingInput)))
-            .collect::<Result<Vec<u8>, RBFCError>>()?,
-        None => match args.dec {
-            Some(dec) => dec
-                .split(',')
-                .map(|x| x.parse::<u8>().or(Err(RBFCError::ParsingInput)))
-                .collect::<Result<Vec<u8>, RBFCError>>()?,
-            None => vec![],
-        },
-    };
-
     if args.interpret {
-        let mut interpreter = match Interpreter::new(code, input) {
+        let mut interpreter = match Interpreter::new(code) {
             Ok(i) => i,
             Err(e) => return Err(RBFCError::Interpreter(e)),
         };

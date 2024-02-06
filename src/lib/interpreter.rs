@@ -1,6 +1,7 @@
+use std::io::Read;
+
 use crate::lexer::{Token, TokenType};
 use crate::parser::{Parser, ParserError};
-use std::collections::VecDeque;
 use thiserror::Error;
 
 /// Error type for the interpreter
@@ -23,13 +24,12 @@ pub enum InterpreterError {
 
 /// The interpreter struct
 ///
-/// This struct is used to represent the interpreter. It contains the tape, the input, the operations
+/// This struct is used to represent the interpreter. It contains the tape, the operations
 /// and the program counter. It also contains the data pointer and the settings for the interpreter
 /// such as the ascii flag
 ///
 /// # Fields
 /// * `tape` - The tape for the program
-/// * `input` - The input for the program
 /// * `ops` - The operations for the program
 /// * `pc` - The program counter
 /// * `dp` - The data pointer
@@ -48,7 +48,6 @@ pub enum InterpreterError {
 /// ```
 pub struct Interpreter {
     tape: [u8; 30000],
-    input: VecDeque<u8>,
     ops: Vec<Token>,
     pc: usize,
     dp: usize,
@@ -59,7 +58,6 @@ impl Interpreter {
     ///
     /// # Arguments
     /// * `code` - A string that contains the code to be interpreted
-    /// * `input` - A Vec of u8 that contains the input for the program
     ///
     /// # Example
     /// ```
@@ -68,7 +66,7 @@ impl Interpreter {
     /// let input = String::from("+++.>+++.>,.>,.");
     /// let mut interpreter = Interpreter::new(input, vec![3, 3]).unwrap();
     /// ```
-    pub fn new(code: String, input: Vec<u8>) -> Result<Interpreter, InterpreterError> {
+    pub fn new(code: String) -> Result<Interpreter, InterpreterError> {
         let mut parser = Parser::new(code);
         let ops = match parser.parse() {
             Ok(ops) => ops,
@@ -76,7 +74,6 @@ impl Interpreter {
         };
         Ok(Interpreter {
             tape: [u8::default(); 30000],
-            input: input.into(),
             ops,
             pc: 0,
             dp: 0,
@@ -93,7 +90,7 @@ impl Interpreter {
     /// use rbfc::interpreter::{Interpreter};
     ///
     /// let input = String::from("+++.>+++.>,.>,.");
-    /// let mut interpreter = Interpreter::new(input, vec![3, 3]).unwrap();
+    /// let mut interpreter = Interpreter::new(input).unwrap();
     /// interpreter.interpret().unwrap();
     /// ```
     pub fn interpret(&mut self) -> Result<(), InterpreterError> {
@@ -103,14 +100,14 @@ impl Interpreter {
                 TokenType::Eof => break,
                 TokenType::Plus => {
                     if let Some(size) = op.size {
-                        self.tape[self.dp] += size as u8;
+                        self.tape[self.dp] = self.tape[self.dp].wrapping_add(size as u8);
                     } else {
                         return Err(InterpreterError::UnexpectedNoneSize(op.loc));
                     }
                 }
                 TokenType::Minus => {
                     if let Some(size) = op.size {
-                        self.tape[self.dp] -= size as u8;
+                        self.tape[self.dp] = self.tape[self.dp].wrapping_sub(size as u8);
                     } else {
                         return Err(InterpreterError::UnexpectedNoneSize(op.loc));
                     }
@@ -149,11 +146,19 @@ impl Interpreter {
                     }
                 }
                 TokenType::Comma => {
-                    let input_byte = self.input.pop_front();
-                    if let Some(input) = input_byte {
-                        self.tape[self.dp] = input;
+                    if let Some(size) = op.size {
+                        for _ in 0..size {
+                            let c = std::io::stdin()
+                                .bytes()
+                                .next()
+                                .and_then(|result| result.ok());
+                            match c {
+                                Some(c) => self.tape[self.dp] = c,
+                                None => return Err(InterpreterError::InputError),
+                            }
+                        }
                     } else {
-                        return Err(InterpreterError::InputError);
+                        return Err(InterpreterError::UnexpectedNoneSize(op.loc));
                     }
                 }
                 TokenType::OpenBracket => {
@@ -179,7 +184,6 @@ impl Interpreter {
             }
             self.pc += 1;
         }
-        println!();
         Ok(())
     }
 }
@@ -191,7 +195,7 @@ mod test {
     #[test]
     fn test_interpreter() {
         let input = String::from("++[->+<]");
-        let mut interpreter = Interpreter::new(input, vec![]).unwrap();
+        let mut interpreter = Interpreter::new(input).unwrap();
         interpreter.interpret().unwrap();
     }
 }
