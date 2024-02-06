@@ -3,7 +3,7 @@ use rbfc::interpreter::{Interpreter, InterpreterError};
 use std::path::PathBuf;
 use thiserror::Error;
 
-mod rbfc;
+extern crate rbfc;
 
 /// The arguments for the program
 #[derive(Parser, Debug)]
