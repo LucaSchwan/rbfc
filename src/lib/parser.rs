@@ -75,7 +75,10 @@ impl Parser {
         loop {
             let mut token = self.lexer.next_token();
             match token.token_type {
-                lexer::TokenType::Eof => break,
+                lexer::TokenType::Eof => {
+                    ops.push(token);
+                    break;
+                }
                 lexer::TokenType::OpenBracket => {
                     jump_stack.push(loc);
                     ops.push(token);
