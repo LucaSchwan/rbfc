@@ -12,7 +12,7 @@ extern crate rbfc;
 #[derive(Parser, Debug)]
 struct Args {
     /// The file to interpret
-    file: PathBuf,
+    file_path: PathBuf,
 
     /// Input as a list of bytes separated by commas
     #[arg(short, long)]
@@ -21,6 +21,10 @@ struct Args {
     /// Input as a list of decimal numbers separated by commas
     #[arg(short, long)]
     dec: Option<String>,
+
+    /// The output folder
+    #[arg(short, long)]
+    output: Option<String>,
 
     /// Whether to interpret the file
     #[arg(short, long)]
@@ -44,9 +48,18 @@ enum RBFCError {
 
 fn main() -> Result<(), RBFCError> {
     let args = Args::parse();
-    let file = args.file.to_string_lossy().to_string();
-    let code =
-        std::fs::read_to_string(file.clone()).or(Err(RBFCError::ReadingFile(file.clone())))?;
+    let file_name = args
+        .file_path
+        .file_name()
+        .ok_or(RBFCError::ReadingFile("Couldn't get filename".to_string()))?
+        .to_os_string()
+        .into_string()
+        .or(Err(RBFCError::ReadingFile(
+            "Couldn't get filename".to_string(),
+        )))?;
+
+    let code = std::fs::read_to_string(args.file_path)
+        .or(Err(RBFCError::ReadingFile(file_name.clone())))?;
 
     let input: Vec<u8> = match args.bytes {
         Some(bytes) => bytes
@@ -80,7 +93,11 @@ fn main() -> Result<(), RBFCError> {
 
         match compiler.compile_code() {
             Ok(asm) => {
-                let file = file.replace(".bf", ".asm");
+                let file = if let Some(output) = args.output {
+                    format!("{}/{}", output, file_name.replace(".bf", ".asm"))
+                } else {
+                    file_name.replace(".bf", ".asm").to_string()
+                };
                 std::fs::write(file.clone(), asm).or(Err(RBFCError::WritingFile(file)))?;
             }
             Err(e) => return Err(RBFCError::Compiler(e)),
