@@ -46,25 +46,25 @@ impl Compiler {
             STDOUT = 1
 
             WRITE_TO_STDOUT:
-              mov rax, SYS_write
-              mov rdi, STDOUT
-              mov rsi, r12
-              mov rdx, 1
-              syscall
-              ret
+            mov rax, SYS_write
+            mov rdi, STDOUT
+            mov rsi, r12
+            mov rdx, 1
+            syscall
+            ret
 
             READ_FROM_STDIN:
-              mov rax, SYS_read
-              mov rdi, STDIN
-              mov rsi, r12
-              mov rdx, 1
-              syscall
-              ret
+            mov rax, SYS_read
+            mov rdi, STDIN
+            mov rsi, r12
+            mov rdx, 1
+            syscall
+            ret
 
             EXIT:
-              mov rax, SYS_exit
-              mov rdi, 0
-              syscall
+            mov rax, SYS_exit
+            mov rdi, 0
+            syscall
 
         "};
 
@@ -113,13 +113,13 @@ impl Compiler {
                         sub r12, {size}
                     "}),
                 TokenType::Dot => {
-                    main.push_str("  ; TokenType::Dot\n");
+                    main.push_str("; TokenType::Dot\n");
                     for _ in 0..size {
                         main.push_str("  call WRITE_TO_STDOUT\n");
                     }
                 }
                 TokenType::Comma => {
-                    main.push_str("  ; TokenType::Comma\n");
+                    main.push_str("; TokenType::Comma\n");
                     for _ in 0..size {
                         main.push_str(&formatdoc! {"
                             call READ_FROM_STDIN
