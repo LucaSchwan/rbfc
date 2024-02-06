@@ -1,4 +1,4 @@
-use super::lexer;
+use crate::lexer;
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq)]
