@@ -21,35 +21,6 @@ pub enum InterpreterError {
     ParserError(ParserError),
 }
 
-/// The settings for the interpreter
-///
-/// This struct is used to represent the settings for the interpreter. It contains the ascii flag
-/// which is used to determine if the output should be printed as ascii characters or as decimal
-/// numbers
-///
-/// # Fields
-/// * `ascii` - A boolean that represents if the output should be printed as ascii characters
-///           or as decimal numbers
-///
-/// # Example
-/// ```
-/// use rbfc::interpreter::{InterpreterSettings};
-/// let settings = InterpreterSettings {
-///    ascii: true
-///    };
-/// ```
-pub struct InterpreterSettings {
-    pub ascii: bool
-}
-
-impl Default for InterpreterSettings {
-    fn default() -> Self {
-        InterpreterSettings {
-            ascii: false
-        }
-    }
-}
-
 /// The interpreter struct
 ///
 /// This struct is used to represent the interpreter. It contains the tape, the input, the operations
@@ -81,7 +52,6 @@ pub struct Interpreter {
     ops: Vec<Token>,
     pc: usize,
     dp: usize,
-    settings: InterpreterSettings
 }
 
 impl Interpreter {
@@ -98,7 +68,7 @@ impl Interpreter {
     /// let input = String::from("+++.>+++.>,.>,.");
     /// let mut interpreter = Interpreter::new(input, vec![3, 3]).unwrap();
     /// ```
-    pub fn new(code: String, input: Vec<u8>, settings: InterpreterSettings) -> Result<Interpreter, InterpreterError> {
+    pub fn new(code: String, input: Vec<u8>) -> Result<Interpreter, InterpreterError> {
         let mut parser = Parser::new(code);
         let ops = match parser.parse() {
             Ok(ops) => ops,
@@ -110,7 +80,6 @@ impl Interpreter {
             ops,
             pc: 0,
             dp: 0,
-            settings
         })
     }
 
@@ -173,11 +142,7 @@ impl Interpreter {
                     match op.size {
                         Some(size) => {
                             for _ in 0..size {
-                                if self.settings.ascii {
-                                    print!("{}", self.tape[self.dp] as char);
-                                } else {
-                                    print!("{}", self.tape[self.dp]);
-                                }
+                                print!("{}", self.tape[self.dp] as char);
                             }
                         }
                         None => return Err(InterpreterError::UnexpectedNoneSize(op.loc)),
@@ -226,8 +191,7 @@ mod test {
     #[test]
     fn test_interpreter() {
         let input = String::from("++[->+<]");
-        let settings: InterpreterSettings = Default::default();
-        let mut interpreter = Interpreter::new(input, vec![], settings).unwrap();
+        let mut interpreter = Interpreter::new(input, vec![]).unwrap();
         interpreter.interpret().unwrap();
     }
 }

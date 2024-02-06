@@ -1,5 +1,5 @@
 use clap::Parser;
-use rbfc::interpreter::{Interpreter, InterpreterError, InterpreterSettings};
+use rbfc::interpreter::{Interpreter, InterpreterError};
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -16,9 +16,6 @@ struct Args {
     #[arg(short, long)]
     /// Input as a list of decimal numbers separated by commas
     dec: Option<String>,
-    /// Output the tape as ascii characters
-    #[arg(short, long)]
-    ascii: bool,
 }
 
 /// The error type for the program
@@ -51,13 +48,7 @@ fn main() -> Result<(), RBFCError> {
         },
     };
 
-    let mut settings: InterpreterSettings = Default::default();
-
-    if args.ascii {
-        settings.ascii = true;
-    }
-
-    let mut interpreter = match Interpreter::new(code, input, settings) {
+    let mut interpreter = match Interpreter::new(code, input) {
         Ok(i) => i,
         Err(e) => return Err(RBFCError::Interpreter(e)),
     };
