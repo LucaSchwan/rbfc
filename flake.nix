@@ -40,6 +40,7 @@
             (rustVersion.override {
               extensions = [ "rust-src" "rust-analyzer" "rustfmt" ];
             })
+            pkgs.fasm
           ];
         };
       });
