@@ -3,6 +3,10 @@ use crate::parser::{Parser, ParserError};
 use indoc::{formatdoc, indoc};
 use thiserror::Error;
 
+/// Error type for the compiler
+///
+/// This error type is used to represent the different kinds of errors that can occur during the
+/// compilation
 #[derive(Error, Debug)]
 pub enum CompilerError {
     #[error("Parsing error: {0}")]
@@ -15,11 +19,40 @@ pub enum CompilerError {
     UnmatchedBracket(usize),
 }
 
+/// The compiler struct
+///
+/// This struct is used to represent the compiler. It contains the operations for the program
+///
+/// # Fields
+/// * `ops` - The operations for the program
+///
+/// # Example
+/// ```
+/// use rbfc::compiler::{Compiler, CompilerError};
+/// let compiler = Compiler::new("+++".to_string()).unwrap();
+/// ```
 pub struct Compiler {
     ops: Vec<Token>,
 }
 
 impl Compiler {
+    /// Create a new compiler
+    ///
+    /// This function is used to create a new compiler. It takes a string of code and returns a
+    /// Result containing the compiler or a CompilerError
+    /// # Arguments
+    /// * `code` - The code to compile
+    /// # Example
+    /// ```
+    /// use rbfc::compiler::{Compiler, CompilerError};
+    /// let compiler = Compiler::new("+++".to_string()).unwrap();
+    /// ```
+    /// # Errors
+    /// If the code cannot be parsed, a CompilerError::ParsingError will be returned
+    /// ```
+    /// use rbfc::compiler::{Compiler, CompilerError};
+    /// assert_eq!(Compiler::new("+++[".to_string()), Err(CompilerError::ParsingError(ParserError::UnmatchedBracket(3))));
+    /// ```
     pub fn new(code: String) -> Result<Compiler, CompilerError> {
         let mut parser = Parser::new(code);
         let ops = match parser.parse() {
@@ -29,6 +62,21 @@ impl Compiler {
         Ok(Compiler { ops })
     }
 
+    /// Compile the code
+    /// This function is used to compile the code. It returns a Result containing the assembly code
+    /// or a CompilerError
+    /// # Example
+    /// ```
+    /// use rbfc::compiler::{Compiler, CompilerError};
+    /// let compiler = Compiler::new("+++".to_string()).unwrap();
+    /// let asm = compiler.compile_code().unwrap();
+    /// ```
+    /// # Errors
+    /// If the code cannot be compiled, a CompilerError will be returned
+    /// ```
+    /// use rbfc::compiler::{Compiler, CompilerError};
+    /// assert_eq!(Compiler::new("+++[".to_string()).unwrap().compile_code(), Err(CompilerError::UnmatchedBracket(3)));
+    /// ```
     pub fn compile_code(&self) -> Result<String, CompilerError> {
         let mut assembly = String::new();
         let header = indoc! {"
@@ -66,6 +114,11 @@ impl Compiler {
             mov rdi, 0
             syscall
 
+            EXIT_WITH_ERROR:
+            mov rax, SYS_exit
+            mov rdi, 1
+            syscall
+
         "};
 
         let mut main = indoc! {"
@@ -86,6 +139,9 @@ impl Compiler {
                 main.push_str(&formatdoc! {"
                         ; TokenType::Eof
                         call EXIT
+
+                        out_of_bounds:
+                        call EXIT_WITH_ERROR
                     "});
                 break;
             }
@@ -106,10 +162,15 @@ impl Compiler {
                     "}),
                 TokenType::ShiftRight => main.push_str(&formatdoc! {"
                         ; TokenType::ShiftRight
+                        cmp r12, (TAPE + TAPE_SIZE - {size})
+                        ja out_of_bounds
                         add r12, {size}
                     "}),
                 TokenType::ShiftLeft => main.push_str(&formatdoc! {"
                         ; TokenType::ShiftLeft
+                        cmp r12, (TAPE + {size})
+                        jl out_of_bounds
+                        jb out_of_bounds
                         sub r12, {size}
                     "}),
                 TokenType::Dot => {
