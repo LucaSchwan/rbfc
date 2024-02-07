@@ -77,17 +77,14 @@ fn main() -> Result<(), RBFCError> {
             Err(e) => return Err(RBFCError::Compiler(e)),
         };
 
-        match compiler.compile_code() {
-            Ok(asm) => {
-                let file = if let Some(output) = args.output {
-                    format!("{}/{}", output, file_name.replace(".bf", ".asm"))
-                } else {
-                    file_name.replace(".bf", ".asm").to_string()
-                };
-                std::fs::write(file.clone(), asm).or(Err(RBFCError::WritingFile(file)))?;
-            }
-            Err(e) => return Err(RBFCError::Compiler(e)),
-        }
+        let asm = compiler.compile_code();
+
+        let file = if let Some(output) = args.output {
+            format!("{}/{}", output, file_name.replace(".bf", ".asm"))
+        } else {
+            file_name.replace(".bf", ".asm").to_string()
+        };
+        std::fs::write(file.clone(), asm).or(Err(RBFCError::WritingFile(file)))?;
     }
     Ok(())
 }

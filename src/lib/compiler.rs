@@ -15,8 +15,6 @@ pub enum CompilerError {
     UnexpectedNoneSize(usize),
     #[error("Unexpected end of file")]
     UnexpectedEof,
-    #[error("Unmatched bracket at position {0}")]
-    UnmatchedBracket(usize),
 }
 
 /// The settings for the compiler
@@ -44,9 +42,10 @@ pub struct CompilerSettings {
 ///
 /// # Example
 /// ```
-/// use rbfc::compiler::{Compiler, CompilerError};
-/// let compiler = Compiler::new("+++".to_string()).unwrap();
+/// use rbfc::compiler::{Compiler, CompilerSettings};
+/// let compiler = Compiler::new("+++".to_string(), CompilerSettings::default()).unwrap();
 /// ```
+#[derive(Debug)]
 pub struct Compiler {
     ops: Vec<Token>,
     settings: CompilerSettings,
@@ -61,14 +60,16 @@ impl Compiler {
     /// * `code` - The code to compile
     /// # Example
     /// ```
-    /// use rbfc::compiler::{Compiler, CompilerError};
-    /// let compiler = Compiler::new("+++".to_string()).unwrap();
+    /// use rbfc::compiler::{Compiler, CompilerSettings};
+    /// let compiler = Compiler::new("+++".to_string(), CompilerSettings::default() ).unwrap();
     /// ```
     /// # Errors
     /// If the code cannot be parsed, a CompilerError::ParsingError will be returned
     /// ```
-    /// use rbfc::compiler::{Compiler, CompilerError};
-    /// assert_eq!(Compiler::new("+++[".to_string()), Err(CompilerError::ParsingError(ParserError::UnmatchedBracket(3))));
+    /// use rbfc::compiler::{Compiler, CompilerError, CompilerSettings};
+    /// use rbfc::parser::ParserError;
+    ///
+    /// matches!(Compiler::new("+++[".to_string(), CompilerSettings::default()), Err(CompilerError::ParsingError(ParserError::UnmatchedBracket(3))));
     /// ```
     pub fn new(code: String, settings: CompilerSettings) -> Result<Compiler, CompilerError> {
         let mut parser = Parser::new(code);
@@ -84,17 +85,11 @@ impl Compiler {
     /// or a CompilerError
     /// # Example
     /// ```
-    /// use rbfc::compiler::{Compiler, CompilerError};
-    /// let compiler = Compiler::new("+++".to_string()).unwrap();
-    /// let asm = compiler.compile_code().unwrap();
+    /// use rbfc::compiler::{Compiler, CompilerError, CompilerSettings};
+    /// let compiler = Compiler::new("+++".to_string(), CompilerSettings::default()).unwrap();
+    /// let asm = compiler.compile_code();
     /// ```
-    /// # Errors
-    /// If the code cannot be compiled, a CompilerError will be returned
-    /// ```
-    /// use rbfc::compiler::{Compiler, CompilerError};
-    /// assert_eq!(Compiler::new("+++[".to_string()).unwrap().compile_code(), Err(CompilerError::UnmatchedBracket(3)));
-    /// ```
-    pub fn compile_code(&self) -> Result<String, CompilerError> {
+    pub fn compile_code(&self) -> String {
         let mut assembly = String::new();
         let header = indoc! {"
             format ELF64 executable 3
@@ -144,9 +139,6 @@ impl Compiler {
         let mut jump_stack = Vec::new();
         for op in self.ops.iter() {
             if op.token_type == TokenType::Eof {
-                if !jump_stack.is_empty() {
-                    return Err(CompilerError::UnexpectedEof);
-                }
                 main.push_str(&formatdoc! {"
                         ; TokenType::Eof
                         call EXIT
@@ -156,7 +148,10 @@ impl Compiler {
 
             let size = match op.size {
                 Some(size) => size,
-                None => return Err(CompilerError::UnexpectedNoneSize(op.loc)),
+                None => panic!(
+                    "Unexpected none size at {}, should be caught at parse",
+                    op.loc
+                ),
             };
 
             match op.token_type {
@@ -233,7 +228,7 @@ impl Compiler {
                 TokenType::CloseBracket => {
                     let loop_name = jump_stack
                         .pop()
-                        .ok_or(CompilerError::UnmatchedBracket(op.loc))?;
+                        .expect("Unmatched bracket should be caught at parse");
                     let code = formatdoc! {"
 
                         ; TokenType::CloseBracket
@@ -260,6 +255,66 @@ impl Compiler {
         assembly.push_str(&main);
         assembly.push_str(data);
 
-        Ok(assembly)
+        assembly
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use indoc::formatdoc;
+
+    #[test]
+    fn compiler_test() {
+        use super::{Compiler, CompilerSettings};
+        let compiler = Compiler::new("+++".to_string(), CompilerSettings::default()).unwrap();
+        let asm = compiler.compile_code();
+        assert_eq!(
+            asm,
+            formatdoc! {
+                "format ELF64 executable 3
+
+                ; Helper functions
+                SYS_read = 0
+                SYS_write = 1
+                SYS_exit = 60
+
+                STDIN = 0
+                STDOUT = 1
+
+                WRITE_TO_STDOUT:
+                mov rax, SYS_write
+                mov rdi, STDOUT
+                mov rsi, r12
+                mov rdx, 1
+                syscall
+                ret
+
+                READ_FROM_STDIN:
+                mov rax, SYS_read
+                mov rdi, STDIN
+                mov rsi, r12
+                mov rdx, 1
+                syscall
+                ret
+
+                EXIT:
+                mov rax, SYS_exit
+                mov rdi, 0
+                syscall
+                segment readable executable
+                entry main
+
+                main:
+                mov r12, (TAPE)
+                ; TokenType::Plus
+                add byte [r12], 3
+                ; TokenType::Eof
+                call EXIT
+
+                segment readable writeable
+                TAPE_SIZE = 30000
+                TAPE rd TAPE_SIZE
+            "}
+        );
     }
 }
