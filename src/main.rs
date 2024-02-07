@@ -1,6 +1,6 @@
 use clap::Parser;
 use rbfc::{
-    compiler::{Compiler, CompilerError},
+    compiler::{Compiler, CompilerError, CompilerSettings},
     interpreter::{Interpreter, InterpreterError, InterpreterSettings},
 };
 use std::path::PathBuf;
@@ -71,7 +71,8 @@ fn main() -> Result<(), RBFCError> {
             Err(e) => return Err(RBFCError::Interpreter(e)),
         }
     } else {
-        let compiler = match Compiler::new(code) {
+        let settings = CompilerSettings { wrap: args.wrap };
+        let compiler = match Compiler::new(code, settings) {
             Ok(c) => c,
             Err(e) => return Err(RBFCError::Compiler(e)),
         };

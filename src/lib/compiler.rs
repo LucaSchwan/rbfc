@@ -19,6 +19,22 @@ pub enum CompilerError {
     UnmatchedBracket(usize),
 }
 
+/// The settings for the compiler
+///
+/// This struct is used to represent the settings for the compiler. It contains the wrap setting
+/// which is used to determine whether the tape should wrap around or not
+/// # Fields
+/// * `wrap` - Whether the tape should wrap around or not
+/// # Example
+/// ```
+/// use rbfc::compiler::{CompilerSettings};
+/// let settings = CompilerSettings { wrap: true };
+/// ```
+#[derive(Debug, Default)]
+pub struct CompilerSettings {
+    pub wrap: bool,
+}
+
 /// The compiler struct
 ///
 /// This struct is used to represent the compiler. It contains the operations for the program
@@ -33,6 +49,7 @@ pub enum CompilerError {
 /// ```
 pub struct Compiler {
     ops: Vec<Token>,
+    settings: CompilerSettings,
 }
 
 impl Compiler {
@@ -53,13 +70,13 @@ impl Compiler {
     /// use rbfc::compiler::{Compiler, CompilerError};
     /// assert_eq!(Compiler::new("+++[".to_string()), Err(CompilerError::ParsingError(ParserError::UnmatchedBracket(3))));
     /// ```
-    pub fn new(code: String) -> Result<Compiler, CompilerError> {
+    pub fn new(code: String, settings: CompilerSettings) -> Result<Compiler, CompilerError> {
         let mut parser = Parser::new(code);
         let ops = match parser.parse() {
             Ok(ops) => ops,
             Err(e) => return Err(CompilerError::ParsingError(e)),
         };
-        Ok(Compiler { ops })
+        Ok(Compiler { ops, settings })
     }
 
     /// Compile the code
@@ -113,12 +130,6 @@ impl Compiler {
             mov rax, SYS_exit
             mov rdi, 0
             syscall
-
-            EXIT_WITH_ERROR:
-            mov rax, SYS_exit
-            mov rdi, 1
-            syscall
-
         "};
 
         let mut main = indoc! {"
@@ -139,9 +150,6 @@ impl Compiler {
                 main.push_str(&formatdoc! {"
                         ; TokenType::Eof
                         call EXIT
-
-                        out_of_bounds:
-                        call EXIT_WITH_ERROR
                     "});
                 break;
             }
@@ -160,19 +168,40 @@ impl Compiler {
                         ; TokenType::Minus
                         sub byte [r12], {size}
                     "}),
-                TokenType::ShiftRight => main.push_str(&formatdoc! {"
-                        ; TokenType::ShiftRight
-                        cmp r12, (TAPE + TAPE_SIZE - {size})
-                        ja out_of_bounds
-                        add r12, {size}
-                    "}),
-                TokenType::ShiftLeft => main.push_str(&formatdoc! {"
-                        ; TokenType::ShiftLeft
-                        cmp r12, (TAPE + {size})
-                        jl out_of_bounds
-                        jb out_of_bounds
-                        sub r12, {size}
-                    "}),
+                TokenType::ShiftRight => {
+                    if self.settings.wrap {
+                        main.push_str(&formatdoc! {"
+                            ; TokenType::ShiftRight
+                            add r12, {size}
+                            cmp r12, (TAPE + TAPE_SIZE)
+                            jl no_wrap_{loc}
+                            sub r12, TAPE_SIZE
+                            no_wrap_{loc}:
+                        ", loc = op.loc})
+                    } else {
+                        main.push_str(&formatdoc! {"
+                            ; TokenType::ShiftRight
+                            add r12, {size}
+                        "})
+                    }
+                }
+                TokenType::ShiftLeft => {
+                    if self.settings.wrap {
+                        main.push_str(&formatdoc! {"
+                            ; TokenType::ShiftLeft
+                            cmp r12, (TAPE + {size})
+                            jl no_wrap_{loc}
+                            add r12, TAPE_SIZE
+                            sub r12, {size}
+                            no_wrap_{loc}:
+                        ", loc = op.loc})
+                    } else {
+                        main.push_str(&formatdoc! {"
+                            ; TokenType::ShiftLeft
+                            sub r12, {size}
+                        "})
+                    }
+                }
                 TokenType::Dot => {
                     main.push_str("; TokenType::Dot\n");
                     for _ in 0..size {
