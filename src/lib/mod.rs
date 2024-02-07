@@ -29,6 +29,24 @@
 //!    loc: 0
 //! });
 //! ```
+//!
+//! # Interpreter example
+//! ```
+//! use rbfc::interpreter::{Interpreter, InterpreterSettings};
+//!
+//! let settings: InterpreterSettings = Default::default();
+//! let mut interpreter = Interpreter::new(String::from("+++"), settings).unwrap();
+//! interpreter.interpret();
+//! ```
+//!
+//! # Compiler example
+//! ```
+//! use rbfc::compiler::{Compiler, CompilerSettings};
+//!
+//! let settings: CompilerSettings = Default::default();
+//! let mut compiler = Compiler::new(String::from("+++"), settings).unwrap();
+//! let result = compiler.compile_code();
+//! ```
 
 pub mod compiler;
 pub mod interpreter;
