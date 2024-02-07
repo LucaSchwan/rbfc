@@ -124,27 +124,32 @@ impl Interpreter {
             match op.token_type {
                 TokenType::Eof => break,
                 TokenType::Plus => {
-                    debug!("Plus: (loc: {loc}, dp: {dp})", loc = op.loc, dp = self.dp);
                     if let Some(size) = op.size {
                         self.tape[self.dp] = self.tape[self.dp].wrapping_add(size as u8);
                     } else {
                         return Err(InterpreterError::UnexpectedNoneSize(op.loc));
                     }
+                    debug!(
+                        "Plus: (loc: {loc}, dp: {dp}, tape: {tape})",
+                        loc = op.loc,
+                        dp = self.dp,
+                        tape = self.tape[self.dp]
+                    );
                 }
                 TokenType::Minus => {
-                    debug!("Minus: (loc: {loc}, dp: {dp})", loc = op.loc, dp = self.dp);
                     if let Some(size) = op.size {
                         self.tape[self.dp] = self.tape[self.dp].wrapping_sub(size as u8);
                     } else {
                         return Err(InterpreterError::UnexpectedNoneSize(op.loc));
                     }
+                    debug!(
+                        "Minus: (loc: {loc}, dp: {dp}, tape: {tape})",
+                        loc = op.loc,
+                        dp = self.dp,
+                        tape = self.tape[self.dp]
+                    );
                 }
                 TokenType::ShiftRight => {
-                    debug!(
-                        "ShiftRight: (loc: {loc}, dp: {dp})",
-                        loc = op.loc,
-                        dp = self.dp
-                    );
                     if let Some(size) = op.size {
                         if self.dp + size >= self.tape.len() {
                             if self.settings.wrap {
@@ -158,13 +163,14 @@ impl Interpreter {
                     } else {
                         return Err(InterpreterError::UnexpectedNoneSize(op.loc));
                     }
+                    debug!(
+                        "ShiftRight: (loc: {loc}, dp: {dp}, tape: {tape})",
+                        loc = op.loc,
+                        dp = self.dp,
+                        tape = self.tape[self.dp]
+                    );
                 }
                 TokenType::ShiftLeft => {
-                    debug!(
-                        "ShiftLeft: (loc: {loc}, dp: {dp})",
-                        loc = op.loc,
-                        dp = self.dp
-                    );
                     if let Some(size) = op.size {
                         if self.dp < size {
                             if self.settings.wrap {
@@ -178,9 +184,20 @@ impl Interpreter {
                     } else {
                         return Err(InterpreterError::UnexpectedNoneSize(op.loc));
                     }
+                    debug!(
+                        "ShiftLeft: (loc: {loc}, dp: {dp}, tape: {tape})",
+                        loc = op.loc,
+                        dp = self.dp,
+                        tape = self.tape[self.dp]
+                    );
                 }
                 TokenType::Dot => {
-                    debug!("Dot: (loc: {loc}, dp: {dp})", loc = op.loc, dp = self.dp);
+                    debug!(
+                        "Dot: (loc: {loc}, dp: {dp}, tape: {tape})",
+                        loc = op.loc,
+                        dp = self.dp,
+                        tape = self.tape[self.dp]
+                    );
                     let op = &self.ops[self.pc];
                     match op.size {
                         Some(size) => {
@@ -192,7 +209,12 @@ impl Interpreter {
                     }
                 }
                 TokenType::Comma => {
-                    debug!("Comma: (loc: {loc}, dp: {dp})", loc = op.loc, dp = self.dp);
+                    debug!(
+                        "Comma: (loc: {loc}, dp: {dp}, tape: {tape})",
+                        loc = op.loc,
+                        dp = self.dp,
+                        tape = self.tape[self.dp]
+                    );
                     if let Some(size) = op.size {
                         for _ in 0..size {
                             let c = std::io::stdin()
@@ -210,13 +232,14 @@ impl Interpreter {
                 }
                 TokenType::OpenBracket => {
                     debug!(
-                        "OpenBracket: (loc: {loc}, dp: {dp})",
+                        "OpenBracket: (loc: {loc}, dp: {dp}, tape: {tape})",
                         loc = op.loc,
-                        dp = self.dp
+                        dp = self.dp,
+                        tape = self.tape[self.dp]
                     );
                     if self.tape[self.dp] == 0 {
                         if let Some(size) = op.size {
-                            self.pc = size + 1;
+                            self.pc = size;
                         } else {
                             let op = &self.ops[self.pc];
                             return Err(InterpreterError::UnexpectedNoneSize(op.loc));
@@ -225,13 +248,14 @@ impl Interpreter {
                 }
                 TokenType::CloseBracket => {
                     debug!(
-                        "CloseBracket: (loc: {loc}, dp: {dp})",
+                        "CloseBracket: (loc: {loc}, dp: {dp}, tape: {tape})",
                         loc = op.loc,
-                        dp = self.dp
+                        dp = self.dp,
+                        tape = self.tape[self.dp]
                     );
                     if self.tape[self.dp] != 0 {
                         if let Some(size) = op.size {
-                            self.pc = size + 1;
+                            self.pc = size;
                         } else {
                             let op = &self.ops[self.pc];
                             return Err(InterpreterError::UnexpectedNoneSize(op.loc));
