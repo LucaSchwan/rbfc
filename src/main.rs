@@ -1,10 +1,12 @@
 use clap::Parser;
 use rbfc::{
     compiler::{Compiler, CompilerError},
-    interpreter::{Interpreter, InterpreterError},
+    interpreter::{Interpreter, InterpreterError, InterpreterSettings},
 };
 use std::path::PathBuf;
 use thiserror::Error;
+extern crate log;
+extern crate pretty_env_logger;
 
 extern crate rbfc;
 
@@ -21,6 +23,10 @@ struct Args {
     /// Whether to interpret the file
     #[arg(short, long)]
     interpret: bool,
+
+    /// Whether to wrap the tape
+    #[arg(short, long)]
+    wrap: bool,
 }
 
 /// The error type for the program
@@ -37,6 +43,8 @@ enum RBFCError {
 }
 
 fn main() -> Result<(), RBFCError> {
+    pretty_env_logger::init();
+
     let args = Args::parse();
     let file_name = args
         .file_path
@@ -52,7 +60,8 @@ fn main() -> Result<(), RBFCError> {
         .or(Err(RBFCError::ReadingFile(file_name.clone())))?;
 
     if args.interpret {
-        let mut interpreter = match Interpreter::new(code) {
+        let settings = InterpreterSettings { wrap: args.wrap };
+        let mut interpreter = match Interpreter::new(code, settings) {
             Ok(i) => i,
             Err(e) => return Err(RBFCError::Interpreter(e)),
         };

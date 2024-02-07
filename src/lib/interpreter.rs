@@ -1,7 +1,7 @@
-use std::io::Read;
-
 use crate::lexer::{Token, TokenType};
 use crate::parser::{Parser, ParserError};
+use log::{debug, trace};
+use std::io::Read;
 use thiserror::Error;
 
 /// Error type for the interpreter
@@ -12,14 +12,33 @@ use thiserror::Error;
 pub enum InterpreterError {
     #[error("Unexpected none size at {0}")]
     UnexpectedNoneSize(usize),
-    #[error("Tape underflow at {0}")]
-    TapeUnderflow(usize),
-    #[error("Tape overflow at {0}")]
-    TapeOverflow(usize),
     #[error("Unexpected input error")]
     InputError,
     #[error("Parsing error: {0}")]
     ParserError(ParserError),
+    #[error("Tape overflow at {0}")]
+    TapeOverflow(usize),
+    #[error("Tape underflow at {0}")]
+    TapeUnderflow(usize),
+}
+
+/// The settings for the interpreter
+///
+/// This struct is used to represent the settings for the interpreter. It contains the wrap
+/// setting which is used to determine whether the tape should wrap around
+/// or not
+///
+/// # Fields
+/// * `wrap` - Whether the tape should wrap around or not
+///
+/// # Example
+/// ```
+/// use rbfc::interpreter::{InterpreterSettings};
+/// let settings = InterpreterSettings { wrap: true };
+/// ```
+#[derive(Debug, Default)]
+pub struct InterpreterSettings {
+    pub wrap: bool,
 }
 
 /// The interpreter struct
@@ -51,6 +70,7 @@ pub struct Interpreter {
     ops: Vec<Token>,
     pc: usize,
     dp: usize,
+    settings: InterpreterSettings,
 }
 
 impl Interpreter {
@@ -66,7 +86,10 @@ impl Interpreter {
     /// let input = String::from("+++.>+++.>,.>,.");
     /// let mut interpreter = Interpreter::new(input, vec![3, 3]).unwrap();
     /// ```
-    pub fn new(code: String) -> Result<Interpreter, InterpreterError> {
+    pub fn new(
+        code: String,
+        settings: InterpreterSettings,
+    ) -> Result<Interpreter, InterpreterError> {
         let mut parser = Parser::new(code);
         let ops = match parser.parse() {
             Ok(ops) => ops,
@@ -77,6 +100,7 @@ impl Interpreter {
             ops,
             pc: 0,
             dp: 0,
+            settings,
         })
     }
 
@@ -96,9 +120,11 @@ impl Interpreter {
     pub fn interpret(&mut self) -> Result<(), InterpreterError> {
         while self.pc < self.ops.len() {
             let op = &self.ops[self.pc];
+            trace!("Tape: {:?}", self.tape[0..10].to_vec());
             match op.token_type {
                 TokenType::Eof => break,
                 TokenType::Plus => {
+                    debug!("Plus: (loc: {loc}, dp: {dp})", loc = op.loc, dp = self.dp);
                     if let Some(size) = op.size {
                         self.tape[self.dp] = self.tape[self.dp].wrapping_add(size as u8);
                     } else {
@@ -106,6 +132,7 @@ impl Interpreter {
                     }
                 }
                 TokenType::Minus => {
+                    debug!("Minus: (loc: {loc}, dp: {dp})", loc = op.loc, dp = self.dp);
                     if let Some(size) = op.size {
                         self.tape[self.dp] = self.tape[self.dp].wrapping_sub(size as u8);
                     } else {
@@ -113,28 +140,47 @@ impl Interpreter {
                     }
                 }
                 TokenType::ShiftRight => {
+                    debug!(
+                        "ShiftRight: (loc: {loc}, dp: {dp})",
+                        loc = op.loc,
+                        dp = self.dp
+                    );
                     if let Some(size) = op.size {
-                        if self.dp + size < 30000 {
-                            self.dp += size;
+                        if self.dp + size >= self.tape.len() {
+                            if self.settings.wrap {
+                                self.dp = self.dp + size - self.tape.len();
+                            } else {
+                                return Err(InterpreterError::TapeOverflow(op.loc));
+                            }
                         } else {
-                            return Err(InterpreterError::TapeOverflow(op.loc));
+                            self.dp += size;
                         }
                     } else {
                         return Err(InterpreterError::UnexpectedNoneSize(op.loc));
                     }
                 }
                 TokenType::ShiftLeft => {
+                    debug!(
+                        "ShiftLeft: (loc: {loc}, dp: {dp})",
+                        loc = op.loc,
+                        dp = self.dp
+                    );
                     if let Some(size) = op.size {
-                        if self.dp >= size {
-                            self.dp -= size;
+                        if self.dp < size {
+                            if self.settings.wrap {
+                                self.dp += self.tape.len() - (size - self.dp);
+                            } else {
+                                return Err(InterpreterError::TapeUnderflow(op.loc));
+                            }
                         } else {
-                            return Err(InterpreterError::TapeUnderflow(op.loc));
+                            self.dp -= size;
                         }
                     } else {
                         return Err(InterpreterError::UnexpectedNoneSize(op.loc));
                     }
                 }
                 TokenType::Dot => {
+                    debug!("Dot: (loc: {loc}, dp: {dp})", loc = op.loc, dp = self.dp);
                     let op = &self.ops[self.pc];
                     match op.size {
                         Some(size) => {
@@ -146,6 +192,7 @@ impl Interpreter {
                     }
                 }
                 TokenType::Comma => {
+                    debug!("Comma: (loc: {loc}, dp: {dp})", loc = op.loc, dp = self.dp);
                     if let Some(size) = op.size {
                         for _ in 0..size {
                             let c = std::io::stdin()
@@ -162,9 +209,14 @@ impl Interpreter {
                     }
                 }
                 TokenType::OpenBracket => {
+                    debug!(
+                        "OpenBracket: (loc: {loc}, dp: {dp})",
+                        loc = op.loc,
+                        dp = self.dp
+                    );
                     if self.tape[self.dp] == 0 {
                         if let Some(size) = op.size {
-                            self.pc = size;
+                            self.pc = size + 1;
                         } else {
                             let op = &self.ops[self.pc];
                             return Err(InterpreterError::UnexpectedNoneSize(op.loc));
@@ -172,9 +224,14 @@ impl Interpreter {
                     }
                 }
                 TokenType::CloseBracket => {
+                    debug!(
+                        "CloseBracket: (loc: {loc}, dp: {dp})",
+                        loc = op.loc,
+                        dp = self.dp
+                    );
                     if self.tape[self.dp] != 0 {
                         if let Some(size) = op.size {
-                            self.pc = size;
+                            self.pc = size + 1;
                         } else {
                             let op = &self.ops[self.pc];
                             return Err(InterpreterError::UnexpectedNoneSize(op.loc));
@@ -195,7 +252,8 @@ mod test {
     #[test]
     fn test_interpreter() {
         let input = String::from("++[->+<]");
-        let mut interpreter = Interpreter::new(input).unwrap();
+        let settings: InterpreterSettings = Default::default();
+        let mut interpreter = Interpreter::new(input, settings).unwrap();
         interpreter.interpret().unwrap();
     }
 }
