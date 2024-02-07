@@ -1,16 +1,16 @@
 build:
   cargo build
 
-int FILE $RUST_LOG="warn": build
-  ./target/debug/rbfc tests/{{FILE}}.bf -i
+int FILE $RUST_LOG *FLAGS: build
+  ./target/debug/rbfc tests/{{FILE}}.bf -i {{FLAGS}}
 
-comp FILE: build
+comp FILE *FLAGS: build
   mkdir -p output
-  ./target/debug/rbfc tests/{{FILE}}.bf -o output
+  ./target/debug/rbfc tests/{{FILE}}.bf -o output {{FLAGS}}
   fasm output/{{FILE}}.asm
 
-run FILE:
-  just comp {{FILE}}
+run FILE *FLAGS:
+  just comp {{FILE}} {{FLAGS}}
   ./output/{{FILE}}
 
 clean_output:
