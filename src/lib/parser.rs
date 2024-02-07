@@ -154,6 +154,11 @@ mod test {
                     size: Some(1),
                     loc: 7
                 },
+                lexer::Token {
+                    token_type: lexer::TokenType::Eof,
+                    size: None,
+                    loc: 8
+                }
             ]
         );
     }
