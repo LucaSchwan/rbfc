@@ -56,14 +56,22 @@ pub struct InterpreterSettings {
 ///
 /// # Example
 /// ```
-/// use rbfc::interpreter::{Interpreter, InterpreterError};
+/// use rbfc::interpreter::{Interpreter, InterpreterSettings};
 ///
-/// fn main() -> Result<(), InterpreterError> {
-///    let input = String::from("+++.>+++.>,.>,.");
-///    let mut interpreter = Interpreter::new(input, vec![3, 3])?;
-///    interpreter.interpret().unwrap();
-///    Ok(())
-/// }
+/// let input = String::from("+++.>+++.>.>.");
+/// let mut interpreter = Interpreter::new(input, InterpreterSettings::default()).unwrap();
+/// interpreter.interpret().unwrap();
+/// ```
+///
+/// # Errors
+/// Returns an error if the input string contains unmatched brackets
+/// or if the input string ends unexpectedly
+/// ```
+/// use rbfc::interpreter::{Interpreter, InterpreterSettings, InterpreterError};
+/// use rbfc::parser::ParserError;
+///
+/// let mut interpreter = Interpreter::new("+++[->+<".to_string(), InterpreterSettings::default());
+/// matches!(interpreter, Err(InterpreterError::ParserError(ParserError::UnexpectedEof(6, 1))));
 /// ```
 pub struct Interpreter {
     tape: [u8; 30000],
@@ -81,10 +89,10 @@ impl Interpreter {
     ///
     /// # Example
     /// ```
-    /// use rbfc::interpreter::{Interpreter};
+    /// use rbfc::interpreter::{Interpreter, InterpreterSettings};
     ///
-    /// let input = String::from("+++.>+++.>,.>,.");
-    /// let mut interpreter = Interpreter::new(input, vec![3, 3]).unwrap();
+    /// let input = String::from("+++.>+++.>.>.");
+    /// let mut interpreter = Interpreter::new(input, InterpreterSettings::default()).unwrap();
     /// ```
     pub fn new(
         code: String,
@@ -111,11 +119,22 @@ impl Interpreter {
     ///
     /// # Example
     /// ```
-    /// use rbfc::interpreter::{Interpreter};
+    /// use rbfc::interpreter::{Interpreter, InterpreterSettings};
     ///
-    /// let input = String::from("+++.>+++.>,.>,.");
-    /// let mut interpreter = Interpreter::new(input).unwrap();
+    /// let input = String::from("+++.>+++.>.>.");
+    /// let mut interpreter = Interpreter::new(input, InterpreterSettings::default()).unwrap();
     /// interpreter.interpret().unwrap();
+    /// ```
+    ///
+    /// # Errors
+    /// Returns an error if the input string contains unmatched brackets
+    /// or if the input string ends unexpectedly
+    /// ```
+    /// use rbfc::interpreter::{Interpreter, InterpreterSettings, InterpreterError};
+    /// use rbfc::parser::ParserError;
+    ///
+    /// let mut interpreter = Interpreter::new("+++[->+<".to_string(), InterpreterSettings::default());
+    /// matches!(interpreter, Err(InterpreterError::ParserError(ParserError::UnexpectedEof(6, 1))));
     /// ```
     pub fn interpret(&mut self) -> Result<(), InterpreterError> {
         while self.pc < self.ops.len() {
